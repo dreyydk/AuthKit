@@ -6,7 +6,10 @@ import jwt from "jsonwebtoken";
 import Token from "../../models/auth/Token.js";
 import crypto from "node:crypto";
 import hashToken from "../../helpers/hashToken.js";
-import sendEmail from "../../helpers/sendEmail.js";
+import {
+  passwordResetEmail,
+  verificationEmail,
+} from "../../helpers/sendEmail.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -175,10 +178,10 @@ export const verifyEmail = asyncHandler(async (req, res) => {
     expiresAt: Date.now() + 24 * 60 * 60 * 1000,
   }).save();
 
-  const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+  const verificationLink = `${process.env.CLIENT_URL}/verify-user/${verificationToken}`;
 
   try {
-    await sendEmail(req.user.email, verificationLink, req.user.name);
+    await verificationEmail(req.user.email, verificationLink, req.user.name);
     return res.status(200).json({ message: "Email sent!" });
   } catch (error) {
     console.log("Error sending email: ", error);
@@ -215,4 +218,71 @@ export const verifyUser = asyncHandler(async (req, res) => {
   user.isVerified = true;
   await user.save();
   res.status(200).json({ message: "User verified!" });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required!" });
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found!" });
+  }
+
+  let token = await Token.findOne({ userId: user._id });
+
+  if (token) {
+    await token.deleteOne();
+  }
+
+  const passwordResetToken = crypto.randomBytes(64).toString("hex") + user._id;
+  const hashedToken = hashToken(passwordResetToken);
+
+  await new Token({
+    userId: user._id,
+    passwordResetToken: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 60 * 60 * 1000,
+  }).save();
+
+  const resetLink = `${process.env.CLIENT_URL}/reset-password/${passwordResetToken}`;
+
+  try {
+    await passwordResetEmail(email, resetLink);
+    return res.status(200).json({ message: "Email sent!" });
+  } catch (error) {
+    console.log("Error sending email: ", error);
+    return res.status(500).json({ message: "Email could not be sent!" });
+  }
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { resetPasswordToken } = req.params;
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ message: "Password is required!" });
+  }
+
+  const hashedToken = hashToken(resetPasswordToken);
+
+  const userToken = await Token.findOne({
+    passwordResetToken: hashedToken,
+    expiresAt: { $gt: Date.now() },
+  });
+
+  if (!userToken) {
+    return res.status(400).json({ message: "Invalid or expired reset token!" });
+  }
+
+  const user = await User.findById(userToken.userId);
+
+  user.password = password;
+  await user.save();
+
+  res.status(200).json({ message: "Password reset successfully!" });
 });

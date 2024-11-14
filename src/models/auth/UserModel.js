@@ -1,6 +1,8 @@
+// Import required modules
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+// Define the User schema
 const UserSchema = new mongoose.Schema(
   {
     name: {
@@ -39,21 +41,29 @@ const UserSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true, minimize: false }
+  {
+    timestamps: true, // Automatically manage createdAt and updatedAt fields
+    minimize: false, // Preserve empty objects
+  }
 );
 
+// Hash the password before saving the user document
 UserSchema.pre("save", async function (next) {
+  // Check if the password has been modified
   if (!this.isModified("password")) {
     return next();
   }
 
+  // Generate a salt and hash the password
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(this.password, salt);
-  this.password = hashedPassword;
+  this.password = hashedPassword; // Store the hashed password
 
-  next();
+  next(); // Proceed to the next middleware
 });
 
-const User = mongoose.model("User", UserSchema);
+// Create the User model
+const User = mongoose.model("User ", UserSchema);
 
+// Export the User model
 export default User;

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  changePassword,
   forgotPassword,
   getUser,
   loginUser,
@@ -39,5 +40,6 @@ router.post("/verify-user/:verificationToken", verifyUser);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:resetPasswordToken", resetPassword);
+router.patch("/change-password", protect, changePassword);
 
 export default router;

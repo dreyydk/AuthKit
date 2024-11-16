@@ -57,9 +57,9 @@ const sendEmail = async (to, subject, html) => {
  * @param {string} name - The name of the recipient.
  */
 export const verificationEmail = async (email, link, name) => {
-  const subject = "Email Verification - AuthKit";
+  const subject = "Email Verification - Authify";
   const html = `<h1>Hello, ${name}!</h1>
-                <p>Thank you for choosing AuthKit as your authentication system. Below is your email verification link:</p>
+                <p>Thank you for choosing Authify as your authentication system. Below is your email verification link:</p>
                 <p><a href="${link}">${link}</a></p>`;
   await sendEmail(email, subject, html);
 };
@@ -71,9 +71,9 @@ export const verificationEmail = async (email, link, name) => {
  * @param {string} link - The password reset link.
  */
 export const passwordResetEmail = async (email, link) => {
-  const subject = "Password Reset - AuthKit";
+  const subject = "Password Reset - Authify";
   const html = `<h1>Hello!</h1>
-                <p>Thank you for choosing AuthKit as your authentication system. Below is your password reset link:</p>
+                <p>Thank you for choosing Authify as your authentication system. Below is your password reset link:</p>
                 <p><a href="${link}">${link}</a></p>`;
   await sendEmail(email, subject, html);
 };
